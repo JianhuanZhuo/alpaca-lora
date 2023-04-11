@@ -27,7 +27,7 @@ from utils.prompter import Prompter
 
 def train(
     # model/data params
-    base_model: str = "",  # the only required argument
+    base_model: str = "decapoda-research/llama-7b-hf",  # the only required argument
     data_path: str = "yahma/alpaca-cleaned",
     output_dir: str = "./lora-alpaca",
     # training hyperparams
@@ -106,13 +106,22 @@ def train(
         os.environ["WANDB_WATCH"] = wandb_watch
     if len(wandb_log_model) > 0:
         os.environ["WANDB_LOG_MODEL"] = wandb_log_model
-
-    model = LlamaForCausalLM.from_pretrained(
-        base_model,
-        load_in_8bit=True,
-        torch_dtype=torch.float16,
-        device_map=device_map,
-    )
+    # https://huggingface.co/decapoda-research/llama-7b-hf/tree/main
+    while True:
+        try:
+            model = LlamaForCausalLM.from_pretrained(
+                base_model,
+                load_in_8bit=True,
+                torch_dtype=torch.float16,
+                device_map=device_map,
+                proxies={
+                    'http': 'http://sys-proxy-rd-relay.byted.org:8118',
+                    'https': 'http://sys-proxy-rd-relay.byted.org:8118',
+                },
+            )
+            break
+        except:
+            print("redo")
 
     tokenizer = LlamaTokenizer.from_pretrained(base_model)
 
